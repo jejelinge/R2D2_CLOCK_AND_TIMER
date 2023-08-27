@@ -6,8 +6,8 @@
 #include "DFRobotDFPlayerMini.h"
 
 //========================USEFUL VARIABLES=============================
-const char *ssid     = "SSID"; 
-const char *password = "PASSWORD";
+const char *ssid     = "SSID"; // put your SSID between the quotes mark
+const char *password = "PASSWORD"; // put your wifi password between the quotes mark
 const long utcOffsetInSeconds = 7200; // UTC + 2H / Offset in second
 uint16_t notification_volume= 15;
 int Display_backlight = 3; // Set displays brightness 0 to 7;
@@ -20,15 +20,11 @@ int Display_backlight = 3; // Set displays brightness 0 to 7;
 #define RED_LED 32
 #define WHITE_LED 33
 
-const byte RXD2 = 16; // Connects to module's RX 
-const byte TXD2 = 17; // Connects to module's TX 
+const byte RXD2 = 16; // Connects to module's TX 
+const byte TXD2 = 17; // Connects to module's RX
 
-#if (defined(ARDUINO_AVR_UNO) || defined(ESP8266))   // Using a soft serial port
-SoftwareSerial softSerial(/*rx =*/4, /*tx =*/5);
-#define FPSerial softSerial
-#else
+
 #define FPSerial Serial1
-#endif
 
 DFRobotDFPlayerMini myDFPlayer;
 void printDetail(uint8_t type, int value);
@@ -55,11 +51,6 @@ TM1637Display red1(21, 22);
 
 void setup() {
 
-  #if (defined ESP32)
-  FPSerial.begin(9600, SERIAL_8N1, RXD2, TXD2);
-#else
-  FPSerial.begin(9600);
-#endif
 
   pinMode(CLK, INPUT);
   pinMode(DT, INPUT);
@@ -73,6 +64,17 @@ void setup() {
   red1.setBrightness(Display_backlight);
   Serial.begin(115200);
 
+  WiFi.begin(ssid, password);
+
+
+  while ( WiFi.status() != WL_CONNECTED ) {
+    delay ( 500 );
+    Serial.print ( "." );
+  }
+
+  timeClient.begin();
+
+  FPSerial.begin(9600, SERIAL_8N1, RXD2, TXD2);
   Serial.println();
   Serial.println(F("DFRobot DFPlayer Mini Demo"));
   Serial.println(F("Initializing DFPlayer ... (May take 3~5 seconds)"));
@@ -91,16 +93,6 @@ void setup() {
   myDFPlayer.play(1);  //Play the first mp3
 
   Serial.println("\n Starting");
-
-  WiFi.begin(ssid, password);
-
-
-  while ( WiFi.status() != WL_CONNECTED ) {
-    delay ( 500 );
-    Serial.print ( "." );
-  }
-
-  timeClient.begin();
 
   // Read the initial state of CLK
   lastStateCLK = digitalRead(CLK);
