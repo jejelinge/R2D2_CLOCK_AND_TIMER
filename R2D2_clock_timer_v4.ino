@@ -1,37 +1,40 @@
-#include <DFMiniMp3.h>
-#include <SoftwareSerial.h>
 #include "WiFiManager.h"
 #include "NTPClient.h"
 #include "TM1637Display.h"
 #include "DFRobotDFPlayerMini.h"
+#include "AiEsp32RotaryEncoder.h"
 
 //========================USEFUL VARIABLES=============================
-const char *ssid     = "SSID"; // put your SSID between the quotes mark
-const char *password = "PASSWORD"; // put your wifi password between the quotes mark
+const char *ssid     = "SSID"; 
+const char *password = "WIFI PASSWORD";
 const long utcOffsetInSeconds = 7200; // UTC + 2H / Offset in second
 uint16_t notification_volume= 15;
 int Display_backlight = 3; // Set displays brightness 0 to 7;
 //=====================================================================
 
-
-#define CLK 25
-#define DT 26
-#define SW 27
+#define ROTARY_ENCODER_A_PIN 25
+#define ROTARY_ENCODER_B_PIN 26
+#define ROTARY_ENCODER_BUTTON_PIN 27
 #define RED_LED 32
 #define WHITE_LED 33
+#define ROTARY_ENCODER_STEPS 4
+#define ROTARY_ENCODER_VCC_PIN -1
 
 const byte RXD2 = 16; // Connects to module's TX 
 const byte TXD2 = 17; // Connects to module's RX
 
+AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(ROTARY_ENCODER_A_PIN, ROTARY_ENCODER_B_PIN, ROTARY_ENCODER_BUTTON_PIN, ROTARY_ENCODER_VCC_PIN, ROTARY_ENCODER_STEPS);
+
+void IRAM_ATTR readEncoderISR()
+{
+    rotaryEncoder.readEncoder_ISR();
+}
 
 #define FPSerial Serial1
-
 DFRobotDFPlayerMini myDFPlayer;
 void printDetail(uint8_t type, int value);
 
 float counter = 0;
-int currentStateCLK;
-int lastStateCLK;
 String currentDir = "";
 unsigned long lastButtonPress = 0;
 int btnState = 0;
@@ -41,20 +44,13 @@ int minutes = 0;
 float inc_red_led = 0;
 
 
-
-
 // Define NTP Client to get time
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "pool.ntp.org", utcOffsetInSeconds);
 TM1637Display red1(21, 22);
 
-
 void setup() {
 
-
-  pinMode(CLK, INPUT);
-  pinMode(DT, INPUT);
-  pinMode(SW, INPUT_PULLUP);
   pinMode(RED_LED, OUTPUT);
   pinMode(WHITE_LED, OUTPUT);
     // configure LED PWM functionalitites
@@ -62,10 +58,9 @@ void setup() {
   // attach the channel to the GPIO to be controlled
   ledcAttachPin(RED_LED, 0);
   red1.setBrightness(Display_backlight);
-  Serial.begin(115200);
+  Serial.begin(9600);
 
   WiFi.begin(ssid, password);
-
 
   while ( WiFi.status() != WL_CONNECTED ) {
     delay ( 500 );
@@ -94,8 +89,10 @@ void setup() {
 
   Serial.println("\n Starting");
 
-  // Read the initial state of CLK
-  lastStateCLK = digitalRead(CLK);
+  rotaryEncoder.begin();
+  rotaryEncoder.setup(readEncoderISR);
+  rotaryEncoder.setBoundaries(0, 3500, true); //minValue, maxValue, circleValues true|false (when max go to min and vice versa)
+  rotaryEncoder.setAcceleration(250);
 
 }
 
@@ -109,7 +106,7 @@ void loop() {
     printDetail(myDFPlayer.readType(), myDFPlayer.read()); //Print the detail message from DFPlayer to handle different errors and states.
   }
 
-  btnState = digitalRead(SW);
+  btnState = digitalRead(ROTARY_ENCODER_BUTTON_PIN);
   ledcWrite(0, inc_red_led);
   digitalWrite(WHITE_LED, LOW);
 
@@ -144,42 +141,24 @@ void Setup_timer() {
   myDFPlayer.play(2);
   delay(500);
 
-  btnState = digitalRead(SW);
-  while (btnState == HIGH) {
-    // Read the current state of CLK
-    currentStateCLK = digitalRead(CLK);
-    btnState = digitalRead(SW);
-    // Serial.println("Dans la boucle");
-    // If last and current state of CLK are different, then pulse occurred
-    // React to only 1 state change to avoid double count
-    if (currentStateCLK != lastStateCLK  && currentStateCLK == 1) {
-      // If the DT state is different than the CLK state then
-      // the encoder is rotating CCW so decrement
-      if (digitalRead(DT) != currentStateCLK) {
-        counter = counter - 10;
-        currentDir = "CCW";
-      } else {
-        // Encoder is rotating CW so increment
-        counter = counter + 10;
-        currentDir = "CW";
-      }
-
-      if (counter < 0){counter = 0;}
-      
-      Serial.print("Direction: ");
-      Serial.print(currentDir);
-      Serial.print(" | Counter: ");
-      Serial.println(counter);
+  btnState = digitalRead(ROTARY_ENCODER_BUTTON_PIN);
+  while (digitalRead(ROTARY_ENCODER_BUTTON_PIN) == HIGH) {
+  
+    if (rotaryEncoder.encoderChanged())
+    {
+        Serial.println(rotaryEncoder.readEncoder());
+        counter = rotaryEncoder.readEncoder();
     }
-
-    // Remember last CLK state
-    lastStateCLK = currentStateCLK;
+    if (rotaryEncoder.isEncoderButtonClicked())
+    {
+        Serial.println("button pressed");
+    }
 
     minutes = counter / 60;
     secondes =  ((counter / 60) - minutes) * 60;
     red1.showNumberDecEx(minutes,0b01000000,true,2,0);
     red1.showNumberDecEx(secondes,0b01000000,true,2,2);
-    //delay(1);
+    
 
   }
   Countdown(counter);
@@ -191,12 +170,11 @@ void Countdown (float timer_counter) {
   
   myDFPlayer.play(8);;
   delay(1000);
-  btnState = digitalRead(SW);
+  btnState = digitalRead(ROTARY_ENCODER_BUTTON_PIN);
 
   while (btnState == HIGH )
-  {
-    btnState = digitalRead(SW);
-
+  { 
+    btnState = digitalRead(ROTARY_ENCODER_BUTTON_PIN);
     for (int i = 10 ; i > 0; i--) {
 
       timer_counter = timer_counter - 0.1;
@@ -204,7 +182,7 @@ void Countdown (float timer_counter) {
       secondes =  ((timer_counter / 60) - minutes) * 60;
   red1.showNumberDecEx(minutes,0b01000000,true,2,0);
   red1.showNumberDecEx(secondes,0b01000000,true,2,2);
-      delay(50);
+      delay(70);
       digitalWrite(RED_LED, LOW);
     }
 
@@ -248,7 +226,6 @@ void Countdown (float timer_counter) {
         digitalWrite(WHITE_LED, LOW);
         waitMilliseconds(random(10, 150));
       }
-
 
       btnState = LOW;
       counter = 0;
