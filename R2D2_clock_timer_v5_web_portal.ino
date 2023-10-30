@@ -5,10 +5,8 @@
 #include "AiEsp32RotaryEncoder.h"
 
 //========================USEFUL VARIABLES=============================
-const char *ssid     = "SSID"; 
-const char *password = "WIFI PASSWORD";
-const long utcOffsetInSeconds = 7200; // UTC + 2H / Offset in second
 uint16_t notification_volume= 15;
+int UTC = 2; // UTC + value in hour - Summer time
 int Display_backlight = 3; // Set displays brightness 0 to 7;
 //=====================================================================
 
@@ -22,6 +20,8 @@ int Display_backlight = 3; // Set displays brightness 0 to 7;
 
 const byte RXD2 = 16; // Connects to module's TX 
 const byte TXD2 = 17; // Connects to module's RX
+const long utcOffsetInSeconds = 3600; // UTC + 2H / Offset in second
+bool res;
 
 AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(ROTARY_ENCODER_A_PIN, ROTARY_ENCODER_B_PIN, ROTARY_ENCODER_BUTTON_PIN, ROTARY_ENCODER_VCC_PIN, ROTARY_ENCODER_STEPS);
 
@@ -46,7 +46,7 @@ float inc_red_led = 0;
 
 // Define NTP Client to get time
 WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, "pool.ntp.org", utcOffsetInSeconds);
+NTPClient timeClient(ntpUDP, "pool.ntp.org", utcOffsetInSeconds*UTC);
 TM1637Display red1(21, 22);
 
 void setup() {
@@ -60,11 +60,15 @@ void setup() {
   red1.setBrightness(Display_backlight);
   Serial.begin(9600);
 
-  WiFi.begin(ssid, password);
-
-  while ( WiFi.status() != WL_CONNECTED ) {
-    delay ( 500 );
-    Serial.print ( "." );
+    WiFiManager manager;    
+     
+   manager.setTimeout(180);
+  //fetches ssid and password and tries to connect, if connections succeeds it starts an access point with the name called "BTTF_CLOCK" and waits in a blocking loop for configuration
+  res = manager.autoConnect("R2D2","password");
+    //manager.resetSettings();
+  if(!res) {
+  Serial.println("failed to connect and timeout occurred");
+  ESP.restart(); //reset and try again
   }
 
   timeClient.begin();
@@ -102,6 +106,22 @@ void loop() {
  red1.showNumberDecEx(timeClient.getHours(),0b01000000,true,2,0);
  red1.showNumberDecEx(timeClient.getMinutes(),0b01000000,true,2,2);
 
+  Serial.print("Time: ");
+  Serial.println(timeClient.getFormattedTime());
+  unsigned long epochTime = timeClient.getEpochTime();
+  struct tm *ptm = gmtime ((time_t *)&epochTime); 
+  int currentYear = ptm->tm_year+1900;
+  Serial.print("Year: ");
+  Serial.println(currentYear);
+  
+  int monthDay = ptm->tm_mday;
+  Serial.print("Month day: ");
+  Serial.println(monthDay);
+
+  int currentMonth = ptm->tm_mon+1;
+  Serial.print("Month: ");
+  Serial.println(currentMonth);
+
   if (myDFPlayer.available()) {
     printDetail(myDFPlayer.readType(), myDFPlayer.read()); //Print the detail message from DFPlayer to handle different errors and states.
   }
@@ -128,6 +148,10 @@ if ( inc_red_led <= 254)
 else inc_red_led = 0;
 
   delay(1);
+
+if((currentMonth*30 + monthDay) >= 121 && (currentMonth*30 + monthDay) < 331){
+timeClient.setTimeOffset(utcOffsetInSeconds*UTC);} // Change daylight saving time - Summer - change 31/03 at 00:00
+else {timeClient.setTimeOffset((utcOffsetInSeconds*UTC) - 3600);} // Change daylight saving time - Winter - change 31/10 at 00:00
 
 }
 
