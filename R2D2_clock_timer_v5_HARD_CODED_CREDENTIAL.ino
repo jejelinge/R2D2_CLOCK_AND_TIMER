@@ -6,6 +6,8 @@
 
 //========================USEFUL VARIABLES=============================
 uint16_t notification_volume= 15;
+const char *ssid     = "SSID"; // put your SSID between the quotes mark
+const char *password = "PASSWORD"; // put your wifi password between the quotes mark
 int UTC = 2; // UTC + value in hour - Summer time
 int Display_backlight = 3; // Set displays brightness 0 to 7;
 //=====================================================================
@@ -59,16 +61,11 @@ void setup() {
   ledcAttachPin(RED_LED, 0);
   red1.setBrightness(Display_backlight);
   Serial.begin(9600);
+  WiFi.begin(ssid, password);
 
-    WiFiManager manager;    
-     
-   manager.setTimeout(180);
-  //fetches ssid and password and tries to connect, if connections succeeds it starts an access point with the name called "BTTF_CLOCK" and waits in a blocking loop for configuration
-  res = manager.autoConnect("R2D2","password");
-    //manager.resetSettings();
-  if(!res) {
-  Serial.println("failed to connect and timeout occurred");
-  ESP.restart(); //reset and try again
+  while ( WiFi.status() != WL_CONNECTED ) {
+    delay ( 500 );
+    Serial.print ( "." );
   }
 
   timeClient.begin();
