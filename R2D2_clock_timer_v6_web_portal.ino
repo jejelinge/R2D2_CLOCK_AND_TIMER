@@ -53,10 +53,6 @@ void setup() {
 
   pinMode(RED_LED, OUTPUT);
   pinMode(WHITE_LED, OUTPUT);
-    // configure LED PWM functionalitites
-  ledcSetup(0, 5000, 8);
-  // attach the channel to the GPIO to be controlled
-  ledcAttachPin(RED_LED, 0);
   red1.setBrightness(Display_backlight);
   Serial.begin(9600);
 

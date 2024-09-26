@@ -6,8 +6,8 @@
 
 //========================USEFUL VARIABLES=============================
 uint16_t notification_volume= 15;
-const char *ssid     = "SSID"; // put your SSID between the quotes mark
-const char *password = "PASSWORD"; // put your wifi password between the quotes mark
+const char *ssid     = "Bbox-D47841B7"; // put your SSID between the quotes mark
+const char *password = "41AE5C36FD5AAAA71166C37CAA4394"; // put your wifi password between the quotes mark
 int UTC = 2; // UTC + value in hour - Summer time
 int Display_backlight = 3; // Set displays brightness 0 to 7;
 //=====================================================================
@@ -55,10 +55,6 @@ void setup() {
 
   pinMode(RED_LED, OUTPUT);
   pinMode(WHITE_LED, OUTPUT);
-    // configure LED PWM functionalitites
-  ledcSetup(0, 5000, 8);
-  // attach the channel to the GPIO to be controlled
-  ledcAttachPin(RED_LED, 0);
   red1.setBrightness(Display_backlight);
   Serial.begin(9600);
   WiFi.begin(ssid, password);
