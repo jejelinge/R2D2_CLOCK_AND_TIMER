@@ -55,6 +55,8 @@ void setup() {
 
   pinMode(RED_LED, OUTPUT);
   pinMode(WHITE_LED, OUTPUT);
+  digitalWrite(RED_LED, 1);
+
   red1.setBrightness(Display_backlight);
   Serial.begin(9600);
   WiFi.begin(ssid, password);
@@ -207,11 +209,11 @@ void Countdown (float timer_counter) {
       myDFPlayer.play(3);
 
       for ( int i = 0 ; i < 9 ; i++) {
-        ledcWrite(0, 255);
+        digitalWrite(RED_LED, HIGH);
         waitMilliseconds(random(10, 150));
         digitalWrite(WHITE_LED, HIGH);
         waitMilliseconds(random(10, 150));
-        ledcWrite(0, 0);
+        digitalWrite(RED_LED, LOW);
         waitMilliseconds(random(10, 150));
         digitalWrite(WHITE_LED, LOW);
         waitMilliseconds(random(10, 150));
@@ -220,11 +222,11 @@ void Countdown (float timer_counter) {
       myDFPlayer.play(5);
       
       for ( int i = 0 ; i < 9 ; i++) {
-        ledcWrite(0, 255);
+        digitalWrite(RED_LED, HIGH);
         waitMilliseconds(random(10, 150));
         digitalWrite(WHITE_LED, HIGH);
         waitMilliseconds(random(10, 150));
-        ledcWrite(0, 0);
+        digitalWrite(RED_LED, LOW);
         waitMilliseconds(random(10, 150));
         digitalWrite(WHITE_LED, LOW);
         waitMilliseconds(random(10, 150));
@@ -233,11 +235,11 @@ void Countdown (float timer_counter) {
       myDFPlayer.play(7);
 
       for ( int i = 0 ; i < 9 ; i++) {
-        ledcWrite(0, 255);
+        digitalWrite(RED_LED, HIGH);
         waitMilliseconds(random(10, 150));
         digitalWrite(WHITE_LED, HIGH);
         waitMilliseconds(random(10, 150));
-        ledcWrite(0, 0);
+        digitalWrite(RED_LED, LOW);
         waitMilliseconds(random(10, 150));
         digitalWrite(WHITE_LED, LOW);
         waitMilliseconds(random(10, 150));
