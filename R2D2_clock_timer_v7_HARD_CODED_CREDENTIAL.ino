@@ -55,7 +55,7 @@ void setup() {
 
   pinMode(RED_LED, OUTPUT);
   pinMode(WHITE_LED, OUTPUT);
-  digitalWrite(RED_LED, 1);
+  
 
   red1.setBrightness(Display_backlight);
   Serial.begin(9600);
@@ -100,6 +100,7 @@ void loop() {
  timeClient.update();
  red1.showNumberDecEx(timeClient.getHours(),0b01000000,true,2,0);
  red1.showNumberDecEx(timeClient.getMinutes(),0b01000000,true,2,2);
+ digitalWrite(RED_LED, 1);
 
   Serial.print("Time: ");
   Serial.println(timeClient.getFormattedTime());

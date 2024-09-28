@@ -102,7 +102,7 @@ void loop() {
  timeClient.update();
  red1.showNumberDecEx(timeClient.getHours(),0b01000000,true,2,0);
  red1.showNumberDecEx(timeClient.getMinutes(),0b01000000,true,2,2);
-
+digitalWrite(RED_LED, 1);
   Serial.print("Time: ");
   Serial.println(timeClient.getFormattedTime());
   unsigned long epochTime = timeClient.getEpochTime();
